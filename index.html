@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark light">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <title>Split-Flap Airport Display</title>
     <style>
         :root {
@@ -167,10 +173,27 @@
             .segment.flip { animation: none; }
             .plane-icon svg { transition: none; }
         }
+
+        /* Live/demo badge */
+        .source-badge {
+            position: fixed; top: 8px; right: 12px;
+            font-size: 0.75rem; letter-spacing: 0.08em; color: var(--muted);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .source-badge::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--faint);
+        }
+        .source-badge[data-state="live"]::before { background: #30d158; }
+
+        /* Kiosk mode (?kiosk=1): no controls, no scrolling, no cursor. */
+        body.kiosk { overflow: hidden; height: 100vh; height: 100dvh; cursor: none; }
+        body.kiosk .button-group, body.kiosk .instructions { display: none; }
     </style>
 </head>
 <body>
     <main id="root" aria-label="Aircraft overhead"></main>
+    <div id="source" class="source-badge" data-state="demo" role="status">DEMO</div>
 
     <script>
         // ---- Configuration ------------------------------------------------
@@ -324,6 +347,136 @@
         });
 
         document.addEventListener('DOMContentLoaded', render);
+
+        // ---- Live data (adsb.lol / airplanes.live v2 "point" API) -------------
+        // ==LIVE-BEGIN==
+        const HOME = { lat: -33.879, lon: 151.151 };
+        const RADIUS_NM = 10;                // the v2 API radius is in nautical miles
+        const POLL_MS = 10000;               // normal poll interval
+        const MIN_POLL_MS = 5000;            // hard floor, never poll faster
+        const MAX_BACKOFF_MS = 120000;
+        // Tried in order. The first entry is a same-origin proxy (proxy.js) because
+        // the public APIs send no CORS headers; direct URLs only work where CORS
+        // is allowed (or via ?api=<url> to point at your own endpoint).
+        const SOURCES = [
+            '/api/aircraft',
+            `https://api.adsb.lol/v2/point/${HOME.lat}/${HOME.lon}/${RADIUS_NM}`,
+            `https://api.airplanes.live/v2/point/${HOME.lat}/${HOME.lon}/${RADIUS_NM}`,
+        ];
+
+        function haversineKm(lat1, lon1, lat2, lon2) {
+            const rad = d => d * Math.PI / 180;
+            const a = Math.sin(rad(lat2 - lat1) / 2) ** 2 +
+                Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lon2 - lon1) / 2) ** 2;
+            return 2 * 6371.0088 * Math.asin(Math.min(1, Math.sqrt(a)));
+        }
+
+        // Pure: v2 response -> [{callsign, altitude (ft), distance (km), heading (deg)}],
+        // nearest first. Aircraft without a position are dropped.
+        function mapAircraft(resp, home = HOME, limit = Infinity) {
+            const list = resp && Array.isArray(resp.ac) ? resp.ac : (resp && Array.isArray(resp.aircraft) ? resp.aircraft : []);
+            return list
+                .filter(a => a && Number.isFinite(a.lat) && Number.isFinite(a.lon))
+                .map(a => {
+                    const alt = typeof a.alt_baro === 'number' ? a.alt_baro
+                        : (typeof a.alt_geom === 'number' ? a.alt_geom : 0);   // 'ground' -> 0
+                    const hdg = [a.track, a.true_heading, a.mag_heading].find(Number.isFinite);
+                    return {
+                        callsign: (a.flight || a.r || a.hex || '').trim().toUpperCase(),
+                        altitude: alt,
+                        distance: haversineKm(home.lat, home.lon, a.lat, a.lon),
+                        heading: hdg === undefined ? 0 : hdg,
+                    };
+                })
+                .sort((x, y) => x.distance - y.distance)
+                .slice(0, limit);
+        }
+
+        // Pure: next delay after a poll. ok -> POLL_MS; errors back off exponentially;
+        // a 429 Retry-After (seconds) is honoured. Never below MIN_POLL_MS.
+        function nextDelay(failures, retryAfterSec) {
+            let d = failures === 0 ? POLL_MS : Math.min(POLL_MS * 2 ** failures, MAX_BACKOFF_MS);
+            if (Number.isFinite(retryAfterSec)) d = Math.max(d, Math.min(retryAfterSec * 1000, MAX_BACKOFF_MS));
+            return Math.max(d, MIN_POLL_MS);
+        }
+        // ==LIVE-END==
+
+        let failures = 0, pollTimer = null, sourceIdx = 0;
+
+        function setSource(state) {
+            const b = document.getElementById('source');
+            b.dataset.state = state;
+            b.textContent = state === 'live' ? 'LIVE' : 'DEMO';
+        }
+
+        async function fetchLive() {
+            const custom = new URLSearchParams(location.search).get('api');
+            const sources = custom ? [custom] : SOURCES;
+            let retryAfter;
+            let lastErr;
+            for (let i = 0; i < sources.length; i++) {
+                const url = sources[(sourceIdx + i) % sources.length];
+                try {
+                    const res = await fetch(url, { cache: 'no-store' });
+                    if (res.status === 429) {
+                        retryAfter = Number(res.headers.get('Retry-After'));
+                        throw new Error('HTTP 429');
+                    }
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const data = await res.json();
+                    if (!data || !Array.isArray(data.ac || data.aircraft)) throw new Error('bad shape');
+                    sourceIdx = (sourceIdx + i) % sources.length;   // stick with what works
+                    setFlights(mapAircraft(data, HOME, MAX_FLIGHTS));
+                    setSource('live');
+                    failures = 0;
+                    return nextDelay(0);
+                } catch (e) { lastErr = e; }
+            }
+            failures++;
+            setSource('demo');
+            console.warn('live fetch failed:', lastErr && lastErr.message);
+            return nextDelay(failures, retryAfter);
+        }
+
+        async function pollLoop() {
+            let delay = POLL_MS;
+            if (!document.hidden) delay = await fetchLive();
+            pollTimer = setTimeout(pollLoop, delay);
+        }
+
+        function startLive() {
+            if (new URLSearchParams(location.search).get('live') === '0') return;   // ?live=0 stays demo
+            pollLoop();
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && pollTimer) { clearTimeout(pollTimer); pollLoop(); }
+            });
+        }
+
+        // ---- Kiosk mode, wake lock, PWA ----------------------------------------
+        const KIOSK = new URLSearchParams(location.search).get('kiosk') === '1';
+        let wakeLock = null;
+        async function requestWakeLock() {
+            if (!('wakeLock' in navigator)) return;
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => { wakeLock = null; });
+            } catch (e) { /* denied or not visible: ignore */ }
+        }
+
+        if (KIOSK) {
+            document.addEventListener('DOMContentLoaded', () => document.body.classList.add('kiosk'));
+            requestWakeLock();
+            // A wake lock is released when the tab is hidden; take it again on return.
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && !wakeLock) requestWakeLock();
+            });
+        }
+
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+        }
+
+        document.addEventListener('DOMContentLoaded', startLive);
     </script>
 </body>
 </html>
