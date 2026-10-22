@@ -3,29 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark light">
     <title>Split-Flap Airport Display</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg: #000;
+            --fg: #fff;
+            --muted: #a3a3a3;      /* 7.9:1 on --bg */
+            --faint: #8a8a8a;
+            --panel: rgba(255, 255, 255, 0.04);
+            --glow: 0 0 10px rgba(255, 255, 255, 0.3);
+            --btn-bg: #fff;
+            --btn-fg: #000;
+            --btn2-bg: #262626;
+            --focus: #ffd60a;
         }
 
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #f4f1ea;
+                --fg: #111;
+                --muted: #555;
+                --faint: #666;
+                --panel: rgba(0, 0, 0, 0.04);
+                --glow: none;
+                --btn-bg: #111;
+                --btn-fg: #fff;
+                --btn2-bg: #e4e0d6;
+                --focus: #0050d0;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background-color: #000000;
-            color: #FFFFFF;
-            font-family: 'Courier New', monospace;
-            overflow: hidden;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Courier New', ui-monospace, monospace;
+            min-height: 100vh;
+            min-height: 100dvh;
         }
 
         #root {
-            width: 100vw;
-            height: 100vh;
+            min-height: inherit;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 40px;
+            padding: clamp(16px, 4vw, 40px);
         }
 
         .container {
@@ -33,77 +58,75 @@
             max-width: 1200px;
             display: flex;
             flex-direction: column;
-            gap: 30px;
+            gap: clamp(16px, 3vw, 30px);
         }
 
         .empty-state {
             text-align: center;
-            font-size: 1.5rem;
-            color: #666666;
-            font-family: 'Courier New', monospace;
+            font-size: clamp(1.1rem, 4vw, 1.5rem);
+            color: var(--muted);
+            padding: 24px 0;
+        }
+
+        .flights {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(16px, 3vw, 30px);
+            list-style: none;
         }
 
         .flight-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: 24px minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
             align-items: center;
-            gap: 20px;
-            border-top: 2px solid #FFFFFF;
-            border-bottom: 2px solid #FFFFFF;
-            padding: 20px 30px;
-            background-color: rgba(255, 255, 255, 0.02);
+            gap: 8px clamp(8px, 2vw, 20px);
+            border-top: 2px solid var(--fg);
+            border-bottom: 2px solid var(--fg);
+            padding: clamp(12px, 2.5vw, 20px) clamp(12px, 3vw, 30px);
+            background: var(--panel);
         }
 
-        .plane-icon {
-            flex-shrink: 0;
-            width: 24px;
-            height: 24px;
-        }
-
-        .plane-icon svg {
-            width: 100%;
-            height: 100%;
-            transition: transform 0.3s ease-out;
-        }
+        .plane-icon { width: 24px; height: 24px; }
+        .plane-icon svg { width: 100%; height: 100%; transition: transform 0.3s ease-out; }
+        .plane-icon path { fill: var(--fg); stroke: var(--fg); stroke-width: 0.5; }
 
         .segment {
-            display: inline-block;
-            min-width: 80px;
+            display: block;
             text-align: center;
-            font-family: 'Courier New', monospace;
-            font-size: 2rem;
+            font-size: clamp(1.15rem, 5vw, 2rem);
             font-weight: bold;
-            color: #FFFFFF;
-            padding: 0 8px;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            text-shadow: var(--glow);
+            overflow-wrap: anywhere;
         }
 
-        .segment.flipping {
-            transform: rotateX(90deg);
-            transform-style: preserve-3d;
-        }
+        .segment.callsign { text-align: left; letter-spacing: 0.04em; }
 
         .data-label {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 100px;
+            min-width: 0;
         }
 
-        .data-label-text {
-            font-size: 0.8rem;
-            color: #999999;
-            margin-bottom: 5px;
+        .data-label-text { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+        .data-label-unit { font-size: 0.75rem; color: var(--faint); margin-top: 4px; }
+
+        /* Flip animation: the .flip class is toggled when a row's data changes. */
+        .segment.flip { animation: flip 0.4s ease-out; }
+        @keyframes flip {
+            from { transform: rotateX(90deg); opacity: 0; }
+            to   { transform: rotateX(0);     opacity: 1; }
         }
 
-        .data-label-unit {
-            font-size: 0.7rem;
-            color: #666666;
-            margin-top: 5px;
+        /* Phones: callsign on top, three readouts underneath. */
+        @media (max-width: 560px) {
+            .flight-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .plane-icon { justify-self: center; }
+            .segment.callsign { grid-column: 2 / -1; }
         }
 
         .button-group {
-            margin-top: 60px;
+            margin-top: clamp(12px, 4vw, 40px);
             display: flex;
             gap: 15px;
             justify-content: center;
@@ -111,231 +134,195 @@
         }
 
         button {
-            padding: 10px 20px;
-            font-size: 1rem;
-            border: none;
+            padding: 12px 20px;
+            min-height: 44px;           /* comfortable touch target */
+            font: bold 1rem 'Courier New', ui-monospace, monospace;
+            border: 1px solid var(--fg);
             border-radius: 0;
             cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            transition: all 0.2s;
+            transition: opacity 0.2s;
         }
+        button:hover { opacity: 0.8; }
+        .btn-add   { background: var(--btn-bg);  color: var(--btn-fg); }
+        .btn-clear { background: var(--btn2-bg); color: var(--fg); }
 
-        .btn-add {
-            background-color: #FFFFFF;
-            color: #000000;
-        }
-
-        .btn-add:hover {
-            background-color: #CCCCCC;
-        }
-
-        .btn-clear {
-            background-color: #333333;
-            color: #FFFFFF;
-            border: 1px solid #FFFFFF;
-        }
-
-        .btn-clear:hover {
-            background-color: #555555;
-        }
+        :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 
         .instructions {
-            margin-top: 40px;
             font-size: 0.9rem;
-            color: #666666;
-            font-family: monospace;
+            color: var(--muted);
             text-align: center;
             max-width: 600px;
+            margin: 0 auto;
         }
+        .instructions p { margin: 5px 0; }
+        .instructions code { color: var(--fg); overflow-wrap: anywhere; }
 
-        .instructions p {
-            margin: 5px 0;
-        }
-
-        .instructions-code {
-            color: #999999;
-            margin-top: 10px;
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; overflow: hidden;
+            clip: rect(0 0 0 0); white-space: nowrap;
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .segment {
-                transition: none;
-            }
-            .plane-icon svg {
-                transition: none;
-            }
+            .segment.flip { animation: none; }
+            .plane-icon svg { transition: none; }
         }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <main id="root" aria-label="Aircraft overhead"></main>
 
     <script>
+        // ---- Configuration ------------------------------------------------
+        const MAX_FLIGHTS = 2;               // how many rows to show (newest win)
+
+        // Each readout is one entry here; add a field and it appears in every row.
+        // `key` is the property name on a flight object, `format` turns the raw
+        // value into display text.
+        const FIELDS = [
+            { key: 'altitude', label: 'ALT',  unit: 'ft', format: v => Math.round(v).toLocaleString() },
+            { key: 'distance', label: 'DIST', unit: '',   format: v => v < 1 ? `${Math.round(v * 1000)}m` : `${v.toFixed(1)}km` },
+            { key: 'heading',  label: 'HDG',  unit: '',   format: v => `${Math.round(v)}°` },
+        ];
+
+        // ---- State ----------------------------------------------------------
         let flights = [];
+        let nextId = 1;
 
-        function formatAltitude(alt) {
-            return Math.round(alt).toLocaleString();
+        function num(v) {
+            const n = Number(v);
+            return Number.isFinite(n) ? n : 0;
         }
 
-        function formatDistance(dist) {
-            if (dist < 1) return `${(dist * 1000).toFixed(0)}m`;
-            return `${dist.toFixed(1)}km`;
-        }
-
-        function createPlaneIcon(heading) {
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('viewBox', '0 0 24 24');
-            svg.setAttribute('width', '24');
-            svg.setAttribute('height', '24');
-            svg.style.transform = `rotate(${heading}deg)`;
-            svg.style.transition = 'transform 0.3s ease-out';
-            
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', 'M12 2L4 22h6l2-6 2 6h6L12 2z');
-            path.setAttribute('fill', '#FFFFFF');
-            path.setAttribute('stroke', '#FFFFFF');
-            path.setAttribute('stroke-width', '0.5');
-            
-            svg.appendChild(path);
-            return svg;
-        }
-
-        function addFlight(flightData) {
-            flights = [...flights, { ...flightData, id: Date.now() }].slice(-2);
+        // ---- Public API (call from Home Assistant, a bookmarklet, the console)
+        function addFlight(data) {
+            if (!data || typeof data !== 'object') return;
+            flights = [...flights, { ...data, id: nextId++ }].slice(-MAX_FLIGHTS);
             render();
         }
-
+        function setFlights(list) {
+            flights = (Array.isArray(list) ? list : []).slice(-MAX_FLIGHTS)
+                .map(f => ({ ...f, id: nextId++ }));
+            render();
+        }
         function clearFlights() {
             flights = [];
             render();
         }
 
         function addRandomFlight() {
-            const callsigns = ['QF', 'JQ', 'VA', 'BA', 'UA', 'NH', 'SQ'];
-            const callsign = callsigns[Math.floor(Math.random() * callsigns.length)] + Math.floor(Math.random() * 9000 + 1000);
-            
+            const prefixes = ['QF', 'JQ', 'VA', 'BA', 'UA', 'NH', 'SQ'];
             addFlight({
-                callsign: callsign,
+                callsign: prefixes[Math.floor(Math.random() * prefixes.length)] + Math.floor(Math.random() * 9000 + 1000),
                 altitude: Math.random() * 35000 + 1000,
                 distance: Math.random() * 5,
                 heading: Math.random() * 360,
             });
         }
 
+        // ---- Rendering ------------------------------------------------------
+        function el(tag, className, text) {
+            const e = document.createElement(tag);
+            if (className) e.className = className;
+            if (text !== undefined) e.textContent = text;
+            return e;
+        }
+
+        function createPlaneIcon(heading) {
+            const NS = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(NS, 'svg');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('aria-hidden', 'true');
+            svg.style.transform = `rotate(${heading}deg)`;
+            const path = document.createElementNS(NS, 'path');
+            path.setAttribute('d', 'M12 2L4 22h6l2-6 2 6h6L12 2z');
+            svg.appendChild(path);
+            return svg;
+        }
+
+        function createRow(flight) {
+            const li = el('li', 'flight-row');
+            const heading = num(flight.heading);
+            const callsign = flight.callsign || '-----';
+
+            // Spoken summary for screen readers; the visual cells are hidden from them.
+            const summary = `${callsign}, ` + FIELDS.map(f =>
+                `${f.label} ${f.format(num(flight[f.key]))}${f.unit ? ' ' + f.unit : ''}`).join(', ');
+            li.appendChild(el('span', 'sr-only', summary));
+
+            const visual = document.createDocumentFragment();
+            const icon = el('div', 'plane-icon');
+            icon.appendChild(createPlaneIcon(heading));
+            visual.appendChild(icon);
+            visual.appendChild(el('span', 'segment callsign flip', callsign));
+
+            FIELDS.forEach(f => {
+                const cell = el('div', 'data-label');
+                cell.appendChild(el('span', 'data-label-text', f.label));
+                cell.appendChild(el('span', 'segment flip', f.format(num(flight[f.key]))));
+                if (f.unit) cell.appendChild(el('span', 'data-label-unit', f.unit));
+                visual.appendChild(cell);
+            });
+
+            const wrap = el('div');
+            wrap.style.display = 'contents';
+            wrap.setAttribute('aria-hidden', 'true');
+            wrap.appendChild(visual);
+            li.appendChild(wrap);
+            return li;
+        }
+
         function render() {
             const root = document.getElementById('root');
-            root.innerHTML = '';
+            root.replaceChildren();
 
-            const container = document.createElement('div');
-            container.className = 'container';
+            const container = el('div', 'container');
 
+            // Live region so screen readers announce arrivals.
+            const live = el('div');
+            live.setAttribute('role', 'status');
+            live.setAttribute('aria-live', 'polite');
             if (flights.length === 0) {
-                const empty = document.createElement('div');
-                empty.className = 'empty-state';
-                empty.textContent = 'Waiting for aircraft...';
-                container.appendChild(empty);
+                live.className = 'empty-state';
+                live.textContent = 'Waiting for aircraft...';
+                container.appendChild(live);
             } else {
-                flights.forEach((flight, idx) => {
-                    const row = document.createElement('div');
-                    row.className = 'flight-row';
-
-                    // Plane icon
-                    const planeDiv = document.createElement('div');
-                    planeDiv.className = 'plane-icon';
-                    planeDiv.appendChild(createPlaneIcon(flight.heading || 0));
-                    row.appendChild(planeDiv);
-
-                    // Callsign
-                    const callsignSpan = document.createElement('span');
-                    callsignSpan.className = 'segment';
-                    callsignSpan.textContent = flight.callsign || '-----';
-                    row.appendChild(callsignSpan);
-
-                    // Altitude
-                    const altDiv = document.createElement('div');
-                    altDiv.className = 'data-label';
-                    const altLabel = document.createElement('span');
-                    altLabel.className = 'data-label-text';
-                    altLabel.textContent = 'ALT';
-                    const altValue = document.createElement('span');
-                    altValue.className = 'segment';
-                    altValue.textContent = formatAltitude(flight.altitude || 0);
-                    const altUnit = document.createElement('span');
-                    altUnit.className = 'data-label-unit';
-                    altUnit.textContent = 'ft';
-                    altDiv.appendChild(altLabel);
-                    altDiv.appendChild(altValue);
-                    altDiv.appendChild(altUnit);
-                    row.appendChild(altDiv);
-
-                    // Distance
-                    const distDiv = document.createElement('div');
-                    distDiv.className = 'data-label';
-                    const distLabel = document.createElement('span');
-                    distLabel.className = 'data-label-text';
-                    distLabel.textContent = 'DIST';
-                    const distValue = document.createElement('span');
-                    distValue.className = 'segment';
-                    distValue.textContent = formatDistance(flight.distance || 0);
-                    distDiv.appendChild(distLabel);
-                    distDiv.appendChild(distValue);
-                    row.appendChild(distDiv);
-
-                    // Heading
-                    const hdgDiv = document.createElement('div');
-                    hdgDiv.className = 'data-label';
-                    const hdgLabel = document.createElement('span');
-                    hdgLabel.className = 'data-label-text';
-                    hdgLabel.textContent = 'HDG';
-                    const hdgValue = document.createElement('span');
-                    hdgValue.className = 'segment';
-                    hdgValue.textContent = `${Math.round(flight.heading || 0)}°`;
-                    hdgDiv.appendChild(hdgLabel);
-                    hdgDiv.appendChild(hdgValue);
-                    row.appendChild(hdgDiv);
-
-                    container.appendChild(row);
-                });
+                const list = el('ul', 'flights');
+                flights.forEach(f => list.appendChild(createRow(f)));
+                container.appendChild(list);
             }
 
-            // Buttons
-            const buttonGroup = document.createElement('div');
-            buttonGroup.className = 'button-group';
-            
-            const addBtn = document.createElement('button');
-            addBtn.className = 'btn-add';
-            addBtn.textContent = '+ Add Flight (Demo)';
+            const buttons = el('div', 'button-group');
+            const addBtn = el('button', 'btn-add', '+ Add Flight (Demo)');
+            addBtn.type = 'button';
             addBtn.addEventListener('click', addRandomFlight);
-            
-            const clearBtn = document.createElement('button');
-            clearBtn.className = 'btn-clear';
-            clearBtn.textContent = 'Clear';
+            const clearBtn = el('button', 'btn-clear', 'Clear');
+            clearBtn.type = 'button';
             clearBtn.addEventListener('click', clearFlights);
-            
-            buttonGroup.appendChild(addBtn);
-            buttonGroup.appendChild(clearBtn);
-            container.appendChild(buttonGroup);
+            buttons.append(addBtn, clearBtn);
+            container.appendChild(buttons);
 
-            // Instructions
-            const instructions = document.createElement('div');
-            instructions.className = 'instructions';
-            instructions.innerHTML = `
-                <p>To integrate with Home Assistant:</p>
-                <p class="instructions-code">
-                    POST to window.addFlight(flightData) with:<br />
-                    { callsign, altitude, distance, heading }
-                </p>
-            `;
-            container.appendChild(instructions);
+            const info = el('div', 'instructions');
+            info.innerHTML = `
+                <p>To integrate with Home Assistant, call:</p>
+                <p><code>window.addFlight({ callsign, altitude, distance, heading })</code></p>
+                <p>altitude in feet, distance in km, heading in degrees.</p>`;
+            container.appendChild(info);
 
             root.appendChild(container);
         }
 
-        // Make addFlight available globally
         window.addFlight = addFlight;
+        window.setFlights = setFlights;
+        window.clearFlights = clearFlights;
 
-        // Initial render when page loads
+        // Same-origin or embedding pages can also push data with postMessage:
+        //   frame.contentWindow.postMessage({ flights: [{callsign:'QF1', altitude:30000, distance:2, heading:90}] }, '*')
+        // Only plain data is read; nothing is evaluated.
+        window.addEventListener('message', e => {
+            if (e.data && Array.isArray(e.data.flights)) setFlights(e.data.flights);
+        });
+
         document.addEventListener('DOMContentLoaded', render);
     </script>
 </body>
