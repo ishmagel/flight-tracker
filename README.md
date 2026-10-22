@@ -48,7 +48,7 @@ dependency-free `proxy.js`, then the direct URLs (which only work where CORS is
 allowed). `?api=<url>` overrides all of that; `?live=0` stays in demo mode.
 
 ```sh
-PORT=8080 node proxy.js     # serves the page and /api/aircraft, caches upstream >= 5 s
+PORT=8080 node proxy.js     # serves the page and /api/aircraft, caches upstream >= 5 s; binds 127.0.0.1 (set HOST=0.0.0.0 to expose on the LAN)
 ```
 
 `LAT`, `LON`, `NM`, `CACHE_MS` and `UPSTREAM` environment variables adjust it.

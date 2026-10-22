@@ -5,6 +5,7 @@
 // Usage: PORT=8080 node proxy.js      (no dependencies, Node 18+)
 const http = require('http'), fs = require('fs'), path = require('path');
 const PORT = Number(process.env.PORT) || 8080;
+const HOST = process.env.HOST || '127.0.0.1';   // loopback by default; put tailscale serve in front
 const LAT = process.env.LAT || '-33.879', LON = process.env.LON || '151.151', NM = process.env.NM || '10';
 const UPSTREAMS = process.env.UPSTREAM ? [process.env.UPSTREAM] : [
   `https://api.adsb.lol/v2/point/${LAT}/${LON}/${NM}`,
@@ -51,4 +52,4 @@ http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(name)] || 'application/octet-stream' });
     res.end(buf);
   });
-}).listen(PORT, () => console.log(`flight-tracker on http://localhost:${PORT}`));
+}).listen(PORT, HOST, () => console.log(`flight-tracker on http://${HOST}:${PORT}`));
