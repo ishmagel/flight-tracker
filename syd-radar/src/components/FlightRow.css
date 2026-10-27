@@ -1,0 +1,80 @@
+.flight-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 20px;
+  height: 76px;
+  border-bottom: 1px solid #1a1a1a;
+  background: #111;
+  position: relative;
+}
+
+.flight-row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--row-accent, #333);
+  transition: background 0.6s;
+}
+
+/* ── Direction (plane icon) ── */
+.col-direction {
+  width: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Airline logo + name ── */
+.col-logo {
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.logo-wrap-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.airline-logo {
+  width: 76px;
+  height: 32px;
+  object-fit: contain;
+  filter: brightness(0.92) contrast(1.1);
+}
+
+.airline-logo-fallback {
+  width: 76px;
+  height: 32px;
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #F5A623;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+
+.airline-name {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: #555;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 90px;
+  text-align: center;
+}
+
+/* ── Split-flap columns ── */
+.col-flight  { flex-shrink: 0; }
+.col-time    { flex-shrink: 0; }
+.col-airport { flex-shrink: 0; }

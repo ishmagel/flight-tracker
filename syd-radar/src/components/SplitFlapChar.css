@@ -1,0 +1,84 @@
+.sf-cell {
+  display: inline-flex;
+  flex-direction: column;
+  width: 22px;
+  height: 38px;
+  border-radius: 3px;
+  margin: 0 1px;
+  overflow: hidden;
+  position: relative;
+  background: #1c1c1c;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+
+.sf-top {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: #232323;
+  transform-origin: bottom center;
+}
+
+.sf-top span {
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 21px;
+  color: #F5A623;
+  line-height: 38px;
+  height: 38px;
+  display: block;
+  transform: translateY(50%);
+  text-shadow: 0 0 8px rgba(245, 166, 35, 0.4);
+  user-select: none;
+}
+
+.sf-gap {
+  height: 1.5px;
+  background: #080808;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.sf-bottom {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: #1c1c1c;
+}
+
+.sf-bottom span {
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 21px;
+  color: #F5A623;
+  line-height: 38px;
+  height: 38px;
+  display: block;
+  transform: translateY(-50%);
+  text-shadow: 0 0 8px rgba(245, 166, 35, 0.4);
+  user-select: none;
+}
+
+/* The folding top-half animation — duration driven by --flip-dur CSS var */
+.sf-cell.sf-flipping .sf-top {
+  animation: flapFold calc(var(--flip-dur, 300ms) * 0.9) ease-in;
+}
+
+.sf-cell.sf-landing .sf-bottom {
+  animation: flapUnfold calc(var(--flip-dur, 300ms) * 0.75) ease-out;
+}
+
+@keyframes flapFold {
+  0%   { transform: perspective(120px) rotateX(0deg);   filter: brightness(1); }
+  60%  { transform: perspective(120px) rotateX(-60deg); filter: brightness(0.3); }
+  100% { transform: perspective(120px) rotateX(-90deg); filter: brightness(0); }
+}
+
+@keyframes flapUnfold {
+  0%   { transform: perspective(120px) rotateX(90deg);  filter: brightness(0); }
+  40%  { transform: perspective(120px) rotateX(30deg);  filter: brightness(0.5); }
+  100% { transform: perspective(120px) rotateX(0deg);   filter: brightness(1); }
+}
