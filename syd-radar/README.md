@@ -6,7 +6,7 @@ Deployed at https://syd-departures.pages.dev/ (Cloudflare Pages project `syd-dep
 ```
 Home Assistant ──POST /ingest (X-Ingest-Secret)──▶ syd-radar-flights Worker ──▶ KV (last 100 flights)
 browser ◀──GET /flights── syd-radar-flights Worker
-browser ◀──GET /checkins── untappd-venue-fetcher Worker (separate repo)
+browser ◀──websocket── untappd-venue-fetcher Worker (separate repo; pushes check-ins)
 ```
 
 Home Assistant pushes outbound, so it needs no public exposure for this app and no Home Assistant token exists
