@@ -1,0 +1,9 @@
+name = "syd-radar-flights"
+main = "index.js"
+compatibility_date = "2025-01-29"
+
+[vars]
+HA_BASE_URL = "https://ishmagel.duckdns.org:8123"
+ALLOWED_ORIGIN = "https://syd-departures.pages.dev"
+
+# HA_TOKEN is a secret, set with: npx wrangler secret put HA_TOKEN
