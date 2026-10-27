@@ -1,10 +1,5 @@
-// Maps Home Assistant FlightRadar24 sensor states to the minimal flight objects the UI renders.
+// Maps FlightRadar24 sensor flights (as sent by Home Assistant) to the minimal objects the UI renders.
 // Pure functions, no I/O: shared by the Worker and its tests.
-
-export const ENTITIES = [
-  'sensor.outside_flightradar24_entered_area',
-  'sensor.outside_flightradar24_current_in_area',
-];
 
 export function normaliseFlight(raw) {
   if (!raw?.id) return null;

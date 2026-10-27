@@ -4,11 +4,13 @@ React/Vite split-flap board combining live Sydney flights and Untappd check-ins.
 Deployed at https://syd-departures.pages.dev/ (Cloudflare Pages project `syd-departures`, direct upload).
 
 ```
-browser ──GET /flights──▶ syd-radar-flights Worker ──REST, Bearer HA_TOKEN──▶ Home Assistant
-        ──GET /checkins─▶ untappd-venue-fetcher Worker (separate repo)
+Home Assistant ──POST /ingest (X-Ingest-Secret)──▶ syd-radar-flights Worker ──▶ KV (last 100 flights)
+browser ◀──GET /flights── syd-radar-flights Worker
+browser ◀──GET /checkins── untappd-venue-fetcher Worker (separate repo)
 ```
 
-The browser holds no credentials. The Home Assistant token exists only as the `HA_TOKEN` Worker secret.
+Home Assistant pushes outbound, so it needs no public exposure for this app and no Home Assistant token exists
+anywhere in the browser or the Worker. The only secret is a random shared `INGEST_SECRET`.
 
 ## Develop
 
@@ -25,17 +27,43 @@ npm run build
 
 ```
 npx wrangler login
-npx wrangler secret put HA_TOKEN --config worker/wrangler.toml   # paste the token at the prompt
-npm run deploy:worker
-npm run build               # needs VITE_FLIGHTS_API_URL / VITE_UNTAPPD_WS_URL (see .env.example)
+openssl rand -hex 32                  # generate INGEST_SECRET; keep it in your password manager
+npx wrangler secret put INGEST_SECRET --config worker/wrangler.toml   # paste at the prompt
+npm run deploy:worker                 # also auto-provisions the FLIGHTS_KV namespace
+VITE_FLIGHTS_API_URL=https://syd-radar-flights.<subdomain>.workers.dev \
+VITE_UNTAPPD_WS_URL=wss://untappd-venue-fetcher.<subdomain>.workers.dev npm run build
 npm run deploy:pages
 ```
 
-## Home Assistant token
+## Home Assistant side
 
-Create a dedicated non-admin HA user (Settings > People > Users; Administrator off; "Can only log in from the local
-network" off, otherwise the Worker is refused). Log in as it, open Profile > Security > Long-lived access tokens and
-create one. HA has no per-entity permissions, so even a non-admin token can read every entity's state over REST. The
-protection is therefore (a) a non-admin user so it cannot call services or change config via the UI, (b) the Worker only
-ever requesting the two FlightRadar24 sensors, and (c) the token living only as a Worker secret. Never put it in a
-`.env` file, the bundle, or chat.
+Add the same secret to HA `secrets.yaml` as `syd_radar_ingest_secret`, then add:
+
+```yaml
+rest_command:
+  syd_radar_push:
+    url: https://syd-radar-flights.<subdomain>.workers.dev/ingest
+    method: POST
+    content_type: application/json
+    timeout: 15
+    headers:
+      X-Ingest-Secret: !secret syd_radar_ingest_secret
+    payload: >-
+      {{ {'entered': state_attr('sensor.outside_flightradar24_entered_area', 'flights') or [],
+          'current': state_attr('sensor.outside_flightradar24_current_in_area', 'flights') or []} | tojson }}
+
+automation:
+  - alias: SYD Radar - push flights to Worker
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id:
+          - sensor.outside_flightradar24_entered_area
+          - sensor.outside_flightradar24_current_in_area
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ trigger.to_state is not none and trigger.to_state.attributes.get('flights', []) | length > 0 }}
+    actions:
+      - action: rest_command.syd_radar_push
+```
