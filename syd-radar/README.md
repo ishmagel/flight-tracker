@@ -33,7 +33,9 @@ npm run deploy:pages
 
 ## Home Assistant token
 
-Create a dedicated non-admin HA user (Settings > People > Users, "Can only log in from the local network" off,
-"Administrator" off), log in as it, open its Profile > Security > Long-lived access tokens, and create one.
-HA limits non-admin users only through entity exposure, so treat the token as able to read states and keep it only
-as the Worker secret. Never put it in a `.env` file, the bundle, or chat.
+Create a dedicated non-admin HA user (Settings > People > Users; Administrator off; "Can only log in from the local
+network" off, otherwise the Worker is refused). Log in as it, open Profile > Security > Long-lived access tokens and
+create one. HA has no per-entity permissions, so even a non-admin token can read every entity's state over REST. The
+protection is therefore (a) a non-admin user so it cannot call services or change config via the UI, (b) the Worker only
+ever requesting the two FlightRadar24 sensors, and (c) the token living only as a Worker secret. Never put it in a
+`.env` file, the bundle, or chat.
