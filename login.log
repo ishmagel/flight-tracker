@@ -1,0 +1,7 @@
+
+ ⛅️ wrangler 4.105.0 (update available 4.153.0)
+───────────────────────────────────────────────
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mYou are logged in with an API Token. Unset the CLOUDFLARE_API_TOKEN in the environment to log in via OAuth.[0m
+
+
+🪵  Logs were written to "/Users/kennethdinesen/Library/Preferences/.wrangler/logs/wrangler-2026-10-27_12-48-53_126.log"

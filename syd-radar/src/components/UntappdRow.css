@@ -1,0 +1,22 @@
+.untappd-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 20px;
+  height: 76px;
+  border-bottom: 1px solid #1a1a1a;
+  background: #111;
+  position: relative;
+}
+
+.untappd-row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--row-accent, #333);
+  transition: background 0.6s;
+}
+
+/* col-direction / col-logo / col-flight shared with FlightRow.css */
+.col-venue { flex-shrink: 0; }

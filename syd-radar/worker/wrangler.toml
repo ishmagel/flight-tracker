@@ -1,0 +1,13 @@
+name = "syd-radar-flights"
+main = "index.js"
+compatibility_date = "2025-01-29"
+account_id = "c8b70ee435916296983bcadfdf8ff15b"
+
+[vars]
+ALLOWED_ORIGIN = "https://syd-departures.pages.dev"
+
+# KV namespace is auto-provisioned on first deploy (no id needed on wrangler >= 4.45).
+[[kv_namespaces]]
+binding = "FLIGHTS_KV"
+
+# INGEST_SECRET is a secret, set with: npx wrangler secret put INGEST_SECRET --config worker/wrangler.toml

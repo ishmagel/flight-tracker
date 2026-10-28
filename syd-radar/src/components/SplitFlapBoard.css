@@ -1,0 +1,230 @@
+.board {
+  width: 100%;
+  max-width: 960px;
+  background: #0d0d0d;
+  border: 1px solid #222;
+  border-radius: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  box-shadow:
+    0 0 0 1px #1a1a1a,
+    0 4px 32px rgba(0,0,0,0.8),
+    0 0 60px rgba(245, 166, 35, 0.04);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* ── Header ── */
+.board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 48px;
+  background: #0a0a0a;
+  border-bottom: 2px solid #1e1e1e;
+}
+
+.board-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.board-icon {
+  font-size: 18px;
+  filter: drop-shadow(0 0 6px rgba(245,166,35,0.6));
+}
+
+.board-name {
+  color: #F5A623;
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(245, 166, 35, 0.4);
+}
+
+.board-badge {
+  font-size: 11px;
+  color: #555;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  margin-left: 8px;
+}
+.board-badge.mock { color: #FF9800; border-color: #3a2a10; }
+
+.board-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.board-clock {
+  color: #F5A623;
+  font-size: 20px;
+  letter-spacing: 4px;
+  text-shadow: 0 0 10px rgba(245, 166, 35, 0.5);
+}
+
+.settings-btn {
+  background: none;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  color: #444;
+  font-size: 16px;
+  width: 30px;
+  height: 26px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, border-color 0.2s;
+  line-height: 1;
+  padding: 0;
+}
+.settings-btn:hover,
+.settings-btn.active {
+  color: #F5A623;
+  border-color: #F5A623;
+}
+
+/* ── Settings panel ── */
+.settings-panel {
+  background: #0b0b0b;
+  border-bottom: 1px solid #1e1e1e;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.setting-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #555;
+  width: 110px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.setting-row input[type="range"] {
+  flex: 1;
+  accent-color: #F5A623;
+  height: 3px;
+  cursor: pointer;
+}
+
+.setting-val {
+  font-size: 11px;
+  color: #F5A623;
+  letter-spacing: 1px;
+  width: 44px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Column labels ── */
+.board-cols {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 20px;
+  height: 26px;
+  background: #0e0e0e;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.col-label {
+  color: #3a3a3a;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.col-label-dir          { width: 48px; }
+.col-label-logo         { width: 90px; }
+.col-label-flight       { min-width: 168px; }   /* 8 chars — flight number */
+.col-label-time         { min-width: 120px; }   /* 5 chars — HH:MM */
+.col-label-airport      { min-width: 312px; }   /* 13 chars — city names */
+.col-label-venue        { min-width: 168px; }   /* 8 chars — venue names */
+.col-label-combined-name { min-width: 288px; }  /* 12 chars — flight/beer */
+.col-label-combined-dest { min-width: 288px; }  /* 12 chars — city/venue */
+
+/* ── Rows area ── */
+.board-rows { min-height: 76px; }
+
+.board-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 152px;
+  color: #2a2a2a;
+  font-size: 13px;
+  letter-spacing: 3px;
+}
+
+/* ── Progress bar ── */
+.board-progress {
+  height: 2px;
+  background: #161616;
+  position: relative;
+  overflow: hidden;
+}
+
+.board-progress-bar {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #F5A623, #FFD54F);
+  animation: progressFill linear forwards;
+}
+
+@keyframes progressFill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+/* ── Footer ── */
+.board-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 30px;
+  background: #090909;
+  border-top: 1px solid #1a1a1a;
+  color: #333;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+.board-footer a { color: #444; text-decoration: none; }
+.board-footer a:hover { color: #666; }
+
+.board-pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4CAF50;
+  margin-right: 6px;
+  animation: pulse 2s ease-in-out infinite;
+  vertical-align: middle;
+}
+.board-pulse.stale { background: #FF9800; }
+.board-pulse.error { background: #f44336; animation: none; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}

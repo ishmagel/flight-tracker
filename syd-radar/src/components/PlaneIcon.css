@@ -1,0 +1,21 @@
+.plane-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.plane-glyph {
+  display: block;
+  line-height: 1;
+  user-select: none;
+  transition: color 0.4s;
+}
+
+.runway-dash {
+  display: block;
+  width: 34px;
+  height: 0;
+  border-bottom: 1.5px dashed var(--rc, #444);
+  opacity: 0.4;
+}
