@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseCheckinMessage } from '../utils/checkinMessage';
+import { backoffDelay } from '../utils/feedLogic';
 
 // Check-ins stream from the untappd-venue-fetcher Worker over a websocket (no credentials):
 // recent check-ins on connect, then new ones as they arrive.
@@ -48,7 +49,7 @@ export function useUntappdCheckins() {
       ws.onclose = () => {
         if (destroyed) return;
         setLoading(false);
-        const delay = Math.min(2000 * 2 ** retries, 30_000);
+        const delay = backoffDelay(retries);
         retries++;
         retryTimer = setTimeout(connect, delay);
       };
